@@ -21,22 +21,58 @@ const App = () => {
 
   // Function to clean and transform data from Google Sheets
   const cleanData = (data) => {
-    return data
-      .filter((row) => row[0]?.trim()) // Ensure the name exists
-      .map((row) => {
-        const rawDate = row[1]?.trim(); // Original date value
-        const parsedDate = new Date(rawDate);
-        const date = isNaN(parsedDate) ? rawDate || 'Unspecified Date' : parsedDate.toDateString();
+    const cleanedFestivals = [];
+    let currentFestival = null;
   
-        return {
-          name: row[0].trim(),
+    data.forEach((row, index) => {
+      const isHeader =
+        row[0]?.toLowerCase() === "festival" ||
+        row[1]?.toLowerCase() === "when" ||
+        row[2]?.toLowerCase() === "location";
+  
+      // Skip repeated headers or completely blank rows
+      if (isHeader || !row.some((cell) => cell?.trim())) {
+        return;
+      }
+  
+      const name = row[0]?.trim();
+      const date = row[1]?.trim();
+      const location = row[2]?.trim() || "Location not available";
+      const website = row[3]?.trim();
+      const promoCodes = row.slice(4).filter((code) => code?.trim());
+  
+      if (name && date) {
+        // Start a new festival entry
+        if (currentFestival) {
+          cleanedFestivals.push(currentFestival);
+        }
+        currentFestival = {
+          name,
           date,
-          location: row[2]?.trim() || 'Location not available',
-          website: row[3]?.trim() || 'Website not provided',
-          promoCodes: row.slice(4).filter((code) => code?.trim()),
+          location,
+          links: website ? [website] : [], // Collect all links
+          promoCodes: [...promoCodes], // Collect promo codes
         };
-      });
+      } else if (currentFestival) {
+        // Handle additional rows with links or promo codes
+        if (website) {
+          currentFestival.links.push(website);
+        }
+        currentFestival.promoCodes.push(...promoCodes);
+      }
+    });
+  
+    // Push the last festival if it exists
+    if (currentFestival) {
+      cleanedFestivals.push(currentFestival);
+    }
+  
+    return cleanedFestivals;
   };
+  
+  
+  
+  
   
 
   // Fetch festival data from Google Sheets API
