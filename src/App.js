@@ -12,9 +12,9 @@ const App = () => {
   const [filteredFestivals, setFilteredFestivals] = useState([]);
   const [filter, setFilter] = useState({ region: '', month: '' });
 
-  const SHEET_ID = 'YOUR_SHEET_ID'; // Replace with your Google Sheet ID
-  const API_KEY = 'YOUR_API_KEY'; // Replace with your Google API Key
-  const RANGE = 'Sheet1'; // Replace with your sheet's range
+  const SHEET_ID = '1wz9w_KyTtN2FUoEg6tYQYzgGWJkASiDdcTceSHe-lSI'; // Replace with your Google Sheet ID
+  const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
+  const RANGE = 'Calendar and Promo Codes'; // Replace with your sheet's range
 
   const cleanData = (data) => {
     return data
