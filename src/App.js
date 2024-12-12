@@ -28,25 +28,27 @@ const App = () => {
       }));
   };
 
-  useEffect(() => {
-    const fetchFestivals = async () => {
-      try {
-        const response = await fetch(
-          `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`
-        );
-        const data = await response.json();
-        if (data.values) {
-          const cleanedData = cleanData(data.values);
-          setFestivals(cleanedData);
-          setFilteredFestivals(cleanedData);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  const fetchFestivals = async () => {
+    try {
+      const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`
+      );
+      const data = await response.json();
+      if (data.values) {
+        const cleanedData = cleanData(data.values);
+        setFestivals(cleanedData);
+        setFilteredFestivals(cleanedData);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
-    fetchFestivals();
-  }, []);
+  fetchFestivals();
+}, []); // Suppress the dependency warning
+
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
