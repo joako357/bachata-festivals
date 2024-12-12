@@ -98,7 +98,7 @@ const App = () => {
 
   return (
     <div>
-      <h1>Bachata Festival Finder</h1>
+      <h1>Bachata Festival App</h1>
       <div>
         <label>
           Region:
