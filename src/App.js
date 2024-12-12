@@ -24,11 +24,11 @@ const App = () => {
     const cleanedFestivals = [];
     let currentFestival = null;
   
-    data.forEach((row, index) => {
+    data.forEach((row) => {
       const isHeader =
-        row[0]?.toLowerCase().includes("festival") || // Case-insensitive header check
-        row[1]?.toLowerCase().includes("when") ||
-        row[2]?.toLowerCase().includes("location");
+        row[0]?.toLowerCase() === "festival" ||
+        row[1]?.toLowerCase() === "when" ||
+        row[2]?.toLowerCase() === "location";
   
       // Skip headers or completely blank rows
       if (isHeader || !row.some((cell) => cell?.trim())) {
@@ -41,20 +41,20 @@ const App = () => {
       const website = row[3]?.trim();
       const promoCodes = row.slice(4).filter((code) => code?.trim());
   
-      if (name && date) {
-        // Start a new festival entry
+      if (name || date) {
+        // Start a new festival entry or update existing one
         if (currentFestival) {
           cleanedFestivals.push(currentFestival);
         }
         currentFestival = {
-          name,
-          date,
+          name: name || "Unnamed Festival",
+          date: date || "Unspecified Date",
           location,
-          links: website ? [website] : [], // Collect links
-          promoCodes: [...promoCodes], // Collect promo codes
+          links: website ? [website] : [],
+          promoCodes: [...promoCodes],
         };
       } else if (currentFestival) {
-        // Merge additional rows into the current festival
+        // Handle additional rows for the same festival
         if (website) {
           currentFestival.links.push(website);
         }
@@ -69,6 +69,7 @@ const App = () => {
   
     return cleanedFestivals;
   };
+  
   
   
   
