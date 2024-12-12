@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Container from '@mui/material/Container';
@@ -16,19 +19,27 @@ const App = () => {
   const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
   const RANGE = 'Calendar and Promo Codes'; // Replace with your sheet's range
 
+  // Function to clean and transform data from Google Sheets
   const cleanData = (data) => {
     return data
-      .filter((row) => row[0]?.trim() && row[1]?.trim()) // Ensure name and date
-      .map((row) => ({
-        name: row[0].trim(),
-        date: row[1].trim(),
-        location: row[2]?.trim() || 'Location not available',
-        website: row[3]?.trim() || 'Website not provided',
-        promoCodes: row.slice(4).filter((code) => code?.trim()),
-      }));
+      .filter((row) => row[0]?.trim()) // Ensure the name exists
+      .map((row) => {
+        const rawDate = row[1]?.trim(); // Original date value
+        const parsedDate = new Date(rawDate);
+        const date = isNaN(parsedDate) ? rawDate || 'Unspecified Date' : parsedDate.toDateString();
+  
+        return {
+          name: row[0].trim(),
+          date,
+          location: row[2]?.trim() || 'Location not available',
+          website: row[3]?.trim() || 'Website not provided',
+          promoCodes: row.slice(4).filter((code) => code?.trim()),
+        };
+      });
   };
+  
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Fetch festival data from Google Sheets API
   useEffect(() => {
     const fetchFestivals = async () => {
       try {
@@ -36,6 +47,7 @@ const App = () => {
           `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`
         );
         const data = await response.json();
+        console.log('Raw Data:', data.values); // Debugging the raw data
         if (data.values) {
           const cleanedData = cleanData(data.values);
           setFestivals(cleanedData);
@@ -43,31 +55,40 @@ const App = () => {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setFestivals([]); // Fallback to an empty list if an error occurs
+        setFilteredFestivals([]);
       }
     };
-  
+
     fetchFestivals();
-  }, [API_KEY]); // Add API_KEY here
-  
+  }, [API_KEY]);
 
-
+  // Handle dropdown filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilter((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Filter festivals based on region and month
   useEffect(() => {
     let filtered = festivals;
+
     if (filter.region) {
       filtered = filtered.filter((festival) =>
         festival.location.toLowerCase().includes(filter.region.toLowerCase())
       );
     }
+
     if (filter.month) {
-      filtered = filtered.filter((festival) =>
-        new Date(festival.date).getMonth() + 1 === parseInt(filter.month)
-      );
+      filtered = filtered.filter((festival) => {
+        const festivalDate = new Date(festival.date);
+        if (!isNaN(festivalDate)) {
+          return festivalDate.getMonth() + 1 === parseInt(filter.month);
+        }
+        return false; // Skip invalid dates
+      });
     }
+
     setFilteredFestivals(filtered);
   }, [filter, festivals]);
 
@@ -77,23 +98,48 @@ const App = () => {
         Bachata Festival Finder
       </Typography>
       <Box display="flex" justifyContent="center" gap={2} marginBottom={4}>
-        <TextField
-          label="Region"
-          variant="outlined"
-          name="region"
-          value={filter.region}
-          onChange={handleFilterChange}
-          placeholder="e.g., Europe"
-        />
-        <TextField
-          label="Month"
-          variant="outlined"
-          type="number"
-          name="month"
-          value={filter.month}
-          onChange={handleFilterChange}
-          placeholder="e.g., 1 for January"
-        />
+        {/* Region Dropdown */}
+        <FormControl variant="outlined" style={{ minWidth: 200 }}>
+          <InputLabel>Region</InputLabel>
+          <Select
+            value={filter.region}
+            onChange={handleFilterChange}
+            label="Region"
+            name="region"
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="Europe">Europe</MenuItem>
+            <MenuItem value="Americas">Americas</MenuItem>
+            <MenuItem value="Asia">Asia</MenuItem>
+            <MenuItem value="Africa">Africa</MenuItem>
+            <MenuItem value="Oceania">Oceania</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Month Dropdown */}
+        <FormControl variant="outlined" style={{ minWidth: 200 }}>
+          <InputLabel>Month</InputLabel>
+          <Select
+            value={filter.month}
+            onChange={handleFilterChange}
+            label="Month"
+            name="month"
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="1">January</MenuItem>
+            <MenuItem value="2">February</MenuItem>
+            <MenuItem value="3">March</MenuItem>
+            <MenuItem value="4">April</MenuItem>
+            <MenuItem value="5">May</MenuItem>
+            <MenuItem value="6">June</MenuItem>
+            <MenuItem value="7">July</MenuItem>
+            <MenuItem value="8">August</MenuItem>
+            <MenuItem value="9">September</MenuItem>
+            <MenuItem value="10">October</MenuItem>
+            <MenuItem value="11">November</MenuItem>
+            <MenuItem value="12">December</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
       <Grid container spacing={3}>
         {filteredFestivals.map((festival, index) => (
