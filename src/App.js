@@ -26,11 +26,11 @@ const App = () => {
   
     data.forEach((row, index) => {
       const isHeader =
-        row[0]?.toLowerCase() === "festival" ||
-        row[1]?.toLowerCase() === "when" ||
-        row[2]?.toLowerCase() === "location";
+        row[0]?.toLowerCase().includes("festival") || // Case-insensitive header check
+        row[1]?.toLowerCase().includes("when") ||
+        row[2]?.toLowerCase().includes("location");
   
-      // Skip repeated headers or completely blank rows
+      // Skip headers or completely blank rows
       if (isHeader || !row.some((cell) => cell?.trim())) {
         return;
       }
@@ -50,11 +50,11 @@ const App = () => {
           name,
           date,
           location,
-          links: website ? [website] : [], // Collect all links
+          links: website ? [website] : [], // Collect links
           promoCodes: [...promoCodes], // Collect promo codes
         };
       } else if (currentFestival) {
-        // Handle additional rows with links or promo codes
+        // Merge additional rows into the current festival
         if (website) {
           currentFestival.links.push(website);
         }
@@ -69,6 +69,7 @@ const App = () => {
   
     return cleanedFestivals;
   };
+  
   
   
   
