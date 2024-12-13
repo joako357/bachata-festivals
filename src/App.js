@@ -9,11 +9,12 @@ import InputLabel from '@mui/material/InputLabel';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Container from '@mui/material/Container';
+import MapComponent from './MapComponent';
 
 const App = () => {
   const [festivals, setFestivals] = useState([]);
-  const [filteredFestivals, setFilteredFestivals] = useState([]);
-  const [filter, setFilter] = useState({ region: '', month: '' });
+const [filteredFestivals, setFilteredFestivals] = useState([]);
+const [filter, setFilter] = useState({ region: '', month: '' });
 
   const SHEET_ID = '1wz9w_KyTtN2FUoEg6tYQYzgGWJkASiDdcTceSHe-lSI'; // Replace with your Google Sheet ID
   const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
@@ -69,12 +70,6 @@ const App = () => {
   
     return cleanedFestivals;
   };
-  
-  
-  
-  
-  
-  
   
 
   // Fetch festival data from Google Sheets API
@@ -179,6 +174,10 @@ const App = () => {
           </Select>
         </FormControl>
       </Box>
+
+  {/* Map Component */}
+  <MapComponent festivals={filteredFestivals} /> {/* Map appears here */}
+
       <Grid container spacing={3}>
         {filteredFestivals.map((festival, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
