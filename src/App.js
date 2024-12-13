@@ -8,13 +8,15 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
 import Container from '@mui/material/Container';
 import MapComponent from './MapComponent';
 
 const App = () => {
   const [festivals, setFestivals] = useState([]);
-const [filteredFestivals, setFilteredFestivals] = useState([]);
-const [filter, setFilter] = useState({ region: '', month: '' });
+  const [filteredFestivals, setFilteredFestivals] = useState([]);
+  const [filter, setFilter] = useState({ region: '', month: '', country: '', type: '', name: '' });
+  const [countries, setCountries] = useState([]); // Dynamically populated countries
 
   const SHEET_ID = '1wz9w_KyTtN2FUoEg6tYQYzgGWJkASiDdcTceSHe-lSI'; // Replace with your Google Sheet ID
   const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
@@ -24,55 +26,69 @@ const [filter, setFilter] = useState({ region: '', month: '' });
   const cleanData = (data) => {
     const cleanedFestivals = [];
     let currentFestival = null;
-  
+
     data.forEach((row) => {
       const isHeader =
-        row[0]?.toLowerCase() === "festival" ||
-        row[1]?.toLowerCase() === "when" ||
-        row[2]?.toLowerCase() === "location";
-  
-      // Skip headers or completely blank rows
+        row[0]?.toLowerCase() === 'festival' ||
+        row[1]?.toLowerCase() === 'when' ||
+        row[2]?.toLowerCase() === 'location';
+
       if (isHeader || !row.some((cell) => cell?.trim())) {
         return;
       }
-  
+
       const name = row[0]?.trim();
       const date = row[1]?.trim();
-      const location = row[2]?.trim() || "Location not available";
+      const location = row[2]?.trim() || 'Location not available';
       const website = row[3]?.trim();
       const promoCodes = row.slice(4).filter((code) => code?.trim());
-  
+
       if (name || date) {
-        // Start a new festival entry or update existing one
         if (currentFestival) {
           cleanedFestivals.push(currentFestival);
         }
         currentFestival = {
-          name: name || "Unnamed Festival",
-          date: date || "Unspecified Date",
+          name: name || 'Unnamed Festival',
+          date: date || 'Unspecified Date',
           location,
           links: website ? [website] : [],
           promoCodes: [...promoCodes],
         };
       } else if (currentFestival) {
-        // Handle additional rows for the same festival
         if (website) {
           currentFestival.links.push(website);
         }
         currentFestival.promoCodes.push(...promoCodes);
       }
     });
-  
-    // Push the last festival if it exists
+
     if (currentFestival) {
       cleanedFestivals.push(currentFestival);
     }
-  
+
     return cleanedFestivals;
   };
-  
 
-  // Fetch festival data from Google Sheets API
+  const fetchCountryFromGeocode = async (festival) => {
+    const GEOCODE_API_URL = 'https://api.opencagedata.com/geocode/v1/json';
+    const GEOCODE_API_KEY = process.env.REACT_APP_OPENCAGE_API_KEY;
+
+    try {
+      const response = await fetch(
+        `${GEOCODE_API_URL}?q=${festival.location}&key=${GEOCODE_API_KEY}`
+      );
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        const country = data.results[0].components.country;
+        return country || 'Unknown';
+      }
+    } catch (error) {
+      console.error(`Error fetching country for location: ${festival.location}`, error);
+    }
+    return 'Unknown';
+  };
+
+  // Fetch festival data and dynamically populate countries
   useEffect(() => {
     const fetchFestivals = async () => {
       try {
@@ -80,29 +96,40 @@ const [filter, setFilter] = useState({ region: '', month: '' });
           `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`
         );
         const data = await response.json();
-        console.log('Raw Data:', data.values); // Debugging the raw data
+        console.log('Raw Data:', data.values);
         if (data.values) {
           const cleanedData = cleanData(data.values);
+
+          // Fetch countries dynamically from geocoded data
+          const countryPromises = cleanedData.map(async (festival) => {
+            const country = await fetchCountryFromGeocode(festival);
+            festival.country = country; // Append the country to each festival
+            return country;
+          });
+
+          const resolvedCountries = await Promise.all(countryPromises);
+          const uniqueCountries = [...new Set(resolvedCountries)].sort(); // Unique and sorted
+          setCountries(uniqueCountries);
+
           setFestivals(cleanedData);
           setFilteredFestivals(cleanedData);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-        setFestivals([]); // Fallback to an empty list if an error occurs
+        setFestivals([]);
         setFilteredFestivals([]);
+        setCountries([]);
       }
     };
 
     fetchFestivals();
   }, [API_KEY]);
 
-  // Handle dropdown filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilter((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Filter festivals based on region and month
   useEffect(() => {
     let filtered = festivals;
 
@@ -118,8 +145,22 @@ const [filter, setFilter] = useState({ region: '', month: '' });
         if (!isNaN(festivalDate)) {
           return festivalDate.getMonth() + 1 === parseInt(filter.month);
         }
-        return false; // Skip invalid dates
+        return false;
       });
+    }
+
+    if (filter.country) {
+      filtered = filtered.filter((festival) => festival.country?.toLowerCase() === filter.country.toLowerCase());
+    }
+
+    if (filter.type) {
+      filtered = filtered.filter((festival) => festival.type?.toLowerCase() === filter.type.toLowerCase());
+    }
+
+    if (filter.name) {
+      filtered = filtered.filter((festival) =>
+        festival.name.toLowerCase().includes(filter.name.toLowerCase())
+      );
     }
 
     setFilteredFestivals(filtered);
@@ -131,7 +172,6 @@ const [filter, setFilter] = useState({ region: '', month: '' });
         Bachata Festival Finder
       </Typography>
       <Box display="flex" justifyContent="center" gap={2} marginBottom={4}>
-        {/* Region Dropdown */}
         <FormControl variant="outlined" style={{ minWidth: 200 }}>
           <InputLabel>Region</InputLabel>
           <Select
@@ -149,7 +189,6 @@ const [filter, setFilter] = useState({ region: '', month: '' });
           </Select>
         </FormControl>
 
-        {/* Month Dropdown */}
         <FormControl variant="outlined" style={{ minWidth: 200 }}>
           <InputLabel>Month</InputLabel>
           <Select
@@ -159,24 +198,57 @@ const [filter, setFilter] = useState({ region: '', month: '' });
             name="month"
           >
             <MenuItem value="">All</MenuItem>
-            <MenuItem value="1">January</MenuItem>
-            <MenuItem value="2">February</MenuItem>
-            <MenuItem value="3">March</MenuItem>
-            <MenuItem value="4">April</MenuItem>
-            <MenuItem value="5">May</MenuItem>
-            <MenuItem value="6">June</MenuItem>
-            <MenuItem value="7">July</MenuItem>
-            <MenuItem value="8">August</MenuItem>
-            <MenuItem value="9">September</MenuItem>
-            <MenuItem value="10">October</MenuItem>
-            <MenuItem value="11">November</MenuItem>
-            <MenuItem value="12">December</MenuItem>
+            {Array.from({ length: 12 }, (_, i) => (
+              <MenuItem value={i + 1} key={i}>
+                {new Date(0, i).toLocaleString('default', { month: 'long' })}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
+
+        <FormControl variant="outlined" style={{ minWidth: 200 }}>
+          <InputLabel>Country</InputLabel>
+          <Select
+            value={filter.country}
+            onChange={handleFilterChange}
+            label="Country"
+            name="country"
+          >
+            <MenuItem value="">All</MenuItem>
+            {countries.map((country, index) => (
+              <MenuItem value={country} key={index}>
+                {country}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl variant="outlined" style={{ minWidth: 200 }}>
+          <InputLabel>Type</InputLabel>
+          <Select
+            value={filter.type}
+            onChange={handleFilterChange}
+            label="Type"
+            name="type"
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="Bachata">Bachata</MenuItem>
+            <MenuItem value="Salsa">Salsa</MenuItem>
+            <MenuItem value="Kizomba">Kizomba</MenuItem>
+          </Select>
+        </FormControl>
+
+        <TextField
+          variant="outlined"
+          label="Search by Name"
+          name="name"
+          value={filter.name}
+          onChange={handleFilterChange}
+          style={{ minWidth: 200 }}
+        />
       </Box>
 
-  {/* Map Component */}
-  <MapComponent festivals={filteredFestivals} /> {/* Map appears here */}
+      <MapComponent festivals={filteredFestivals} />
 
       <Grid container spacing={3}>
         {filteredFestivals.map((festival, index) => (
