@@ -1,0 +1,175 @@
+Project Summary: Bachata Festival Finder
+
+Objective
+
+The project aims to build a Bachata Festival Finder application that displays festival data fetched from a Google Sheet and visualizes festival locations on a map using the OpenCage Geocoding API. The app also includes filtering options for region, country, month, and festival type.
+
+Tech Stack
+
+Frontend: React.js
+
+Backend: Node.js (Express)
+
+APIs:
+
+Google Sheets API (for fetching festival data)
+
+OpenCage Geocoding API (for location geocoding)
+
+Map Visualization: React-Leaflet (Leaflet.js library)
+
+State Management: React Hooks
+
+Data Storage: LocalStorage (for caching geocoded locations)
+
+Environment Variables: .env file for protecting API keys
+
+Features Implemented
+
+1. Fetch and Display Festival Data
+
+Google Sheets API fetches raw festival data from a sheet.
+
+Data is cleaned using the cleanData function to:
+
+Remove blank rows and headers.
+
+Handle multi-row festivals with multiple links and promo codes.
+
+Structure the data into festival objects with name, date, location, links, and promoCodes fields.
+
+2. Geocoding and Map Visualization
+
+Geocode Festivals:
+
+OpenCage Geocoding API converts festival location to latitude/longitude coordinates.
+
+Caching: Geocoded results are cached in LocalStorage to minimize API requests.
+
+Manual Overrides: Specific hard-to-geocode locations are overridden using a locationOverrides object.
+
+Map Integration:
+
+React-Leaflet displays festival markers on the map.
+
+Popups show festival details: name, location, date, and a website link.
+
+Custom icons (like the 'woman' icon) are used for festival markers.
+
+3. Filtering Options
+
+Users can filter festivals dynamically using dropdown menus:
+
+Region: Filter by predefined regions (e.g., Europe, Americas).
+
+Month: Select a month from January to December.
+
+Country: Dynamically populated based on geocoded data.
+
+Type: Festival type such as Bachata, Salsa, or Kizomba.
+
+Name: Filter festivals by name (implemented for convenience).
+
+4. Backend Integration
+
+A Node.js Express backend provides secure endpoints:
+
+/api/geocode: Accepts a POST request with a location and returns geocoded coordinates.
+
+/api/festivals: Fetches data from Google Sheets API.
+
+Backend secures API keys in a .env file.
+
+Code Organization
+
+Frontend
+
+App.js: Main application component.
+
+Integrates filtering, festival cards, and the map component.
+
+MapComponent.js: Handles map rendering and geolocation logic.
+
+FilterBar.js: Dedicated component for filter controls.
+
+FestivalCard.js: Displays individual festival information in a card format.
+
+hooks/useFestivalData.js: Custom hook for fetching and cleaning festival data.
+
+Backend
+
+server.js: Express server with two main routes:
+
+/api/geocode: Fetches geocoding data from OpenCage.
+
+/api/festivals: Fetches and returns festival data from Google Sheets API.
+
+.env: Stores sensitive API keys:
+
+OPENCAGE_API_KEY=YOUR_OPENCAGE_API_KEY
+GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY
+
+Challenges and Resolutions
+
+Unrecognized Locations:
+
+Manual overrides added for problematic locations like "Long Beach, Kryemedhenj, golem".
+
+Geocoding fallback for unresolved locations to ensure they appear on the map under "Other".
+
+API Key Security:
+
+Moved API calls to the backend to avoid exposing API keys.
+
+.env used for storing keys securely.
+
+Performance Optimization:
+
+Caching geocoded coordinates in LocalStorage.
+
+Reduced redundant API calls with manual caching logic.
+
+Dynamically Fetching Countries:
+
+Countries were dynamically derived from geocoded location results.
+
+Unique and sorted list of countries populated in the "Country" filter dropdown.
+
+Internal Server Errors:
+
+Debugged the backend API routes and ensured proper error handling for /api/geocode and /api/festivals.
+
+Next Steps
+
+Backend Caching:
+
+Implement a backend database (e.g., MongoDB) to cache geocoded coordinates.
+
+Reduces reliance on LocalStorage and API request limits.
+
+Pagination/Infinite Scroll:
+
+Add pagination or infinite scroll for large datasets to optimize performance.
+
+Testing:
+
+Write unit tests for frontend components using Jest.
+
+Add backend API tests with tools like Supertest.
+
+Error Handling UI:
+
+Display friendly error messages or fallback UI components when data fetching fails.
+
+Mobile Responsiveness:
+
+Enhance map and UI components to work seamlessly on mobile devices.
+
+Deployment:
+
+Deploy both the frontend (Netlify/Vercel) and backend (Heroku/Render).
+
+Summary
+
+The project successfully fetches festival data, geocodes locations, and displays festivals on an interactive map with filtering options. Future improvements include backend caching, testing, and UI enhancements for performance and usability.
+
